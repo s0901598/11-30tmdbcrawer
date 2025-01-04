@@ -11,7 +11,9 @@ headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/53
 res=requests.get(url,headers=headers)
 soup=BeautifulSoup(res.text,'lxml')
 
-datas=[]
+client=MongoClient("mongodb://localhost:27017")
+db=client['tmdb']
+collection=db['tmdbproduct']
 
 for page in range(maxpage):
     links=url+"Page="+str(page+1)
@@ -41,7 +43,18 @@ for page in range(maxpage):
         for all in alls :
            characterElements = all.select('.character')
            if len(characterElements) !=0 and  'Director' in all.select('.character')[0].text:
-             director=all.select('p:nth-child(1)')[0].text#導演
+             director=all.select('p:nth-child(1)')[0].text#導演姓名
+             directorlink="https://www.themoviedb.org"+all.select('p:nth-child(1)>a')[0].attrs['href']#導演連結
+             directorinfo=requests.get(directorlink,headers=headers)
+             directorsoup=BeautifulSoup(directorinfo.text,'lxml')
+             directorElement=directorsoup.select('.content>.text')
+             if len(directorElement) !=0 :
+                directoestate=directorElement[0].text#導演簡介
+             
+             directorElements=directorsoup.select('.title>bdi')
+             for directorElement in directorElements:
+                directorPortfolio=directorElement.text#導演作品
+
         keywords=contentsoup.select('.keywords li a')
         for keyword in keywords:
             keyword=keyword.text#關鍵字
@@ -60,34 +73,26 @@ for page in range(maxpage):
 
            portfolios=performersoup.select('.poster')
            for portfolio in portfolios:
-              actorfolio=portfolio.attrs['alt']#演出作品
+              actorportfolio=portfolio.attrs['alt']#演出作品
               
            
-           
-
-
-      
+        data ={
+           "name":name,#電影名稱
+           "Date":date,#上映日期
+           "Type":moviestype,#電影類型
+           "Score":userscore,#電影評分
+           "MovieTime":movietime,#電影時長
+           "Actor":actor,#演員
+           "ActorFile":actorfile,#演員簡介
+           "ActorPortfolio":actorportfolio,#演出作品
+           "Director":director,#導演姓名
+           "DirectoeState":directoestate,#導演簡介
+           "DirectorPortfolio":directorPortfolio,#導演作品
+           "Keyword":keyword,#關鍵字
+           "OriginlLangue":OriginlLangue,#原始語言
+           "Pic":pic,#海報連結
+           "Link":links,#簡介連結
+        }
+        collection.insert_one(data)
+        print(f"插入數據成功")
         
-      #   datas.append({
-      #      "name":name,#電影名稱
-      #      "Date":date,#上映日期
-      #      "Type":moviestype,#電影類型
-      #      "Score":userscore,#電影評分
-      #      "MovieTime":movietime,#電影時長
-      #      "Actor":actor,#演員
-      #      "Director":director,#導演
-      #      "Keyword":keyword,#關鍵字
-      #      "OriginlLangue":OriginlLangue,#原始語言
-      #      "Pic":pic,#海報連結
-      #      "Link":links,#簡介連結
-      #   })
-
-client=MongoClient("mongodb://localhost:27017")
-db=client['tmdb']
-collection=db['tmdbproduct']
-
-if datas:
-   collection.insert_many(datas)
-   print(f"{len(datas)}插入數據成功")
-else:
-   print("插入數據失敗")
