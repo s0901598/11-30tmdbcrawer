@@ -65,7 +65,9 @@ for page in range(maxpage):
            performerlink="https://www.themoviedb.org"+performer.attrs['href']#演員連結
            performerinfo=requests.get(performerlink,headers=headers)
            performersoup=BeautifulSoup(performerinfo.text,'lxml')
-           actorname=performersoup.select('.title>a')[0].text#演員姓名
+           actornamelen=performersoup.select('.title>a')#演員姓名
+           if len(actornamelen)!=0:
+              actorname=performersoup.select('.title>a')[0].text
            actorElement = performersoup.select('.content>.text')
            if len(actorElement) !=0 :
             
